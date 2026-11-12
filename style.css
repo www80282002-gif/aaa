@@ -1,0 +1,227 @@
+:root {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #5f6b7a;
+  --border: #d5dbe1;
+  --primary: #1d5fbf;
+  --primary-text: #ffffff;
+  --ok-bg: #e6f4ea;
+  --ok-text: #1e6b34;
+  --err-bg: #fdecea;
+  --err-text: #a12622;
+  --high: #c62828;
+  --mid: #b26a00;
+  --low: #2e7d32;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14181d;
+    --card: #1e242b;
+    --text: #e6e9ed;
+    --muted: #9aa5b1;
+    --border: #36404a;
+    --primary: #5b9cf0;
+    --primary-text: #0d1117;
+    --ok-bg: #173523;
+    --ok-text: #8fd6a3;
+    --err-bg: #3d1c1a;
+    --err-text: #f4a6a0;
+    --high: #ff8a80;
+    --mid: #ffc266;
+    --low: #8fd6a3;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.site-header,
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-header { padding-top: 24px; }
+.site-header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.site-header p { margin: 0 0 16px; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card h2 { margin: 0 0 12px; font-size: 1.2rem; }
+
+.field {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field > label,
+.field > legend {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  /* 16px 以上可避免 iPhone 點輸入框時自動放大 */
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+textarea { resize: vertical; }
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+.choice input:focus-visible + span {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.hint { color: var(--muted); font-size: 0.85rem; }
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice { flex: 1 1 0; min-width: 64px; position: relative; }
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.choice span {
+  display: block;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.choice input:checked + span {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#submit-btn {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+button:disabled { opacity: 0.6; cursor: wait; }
+
+button.secondary {
+  min-height: 40px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.message {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.message.ok { background: var(--ok-bg); color: var(--ok-text); }
+.message.err { background: var(--err-bg); color: var(--err-text); }
+.message.info { color: var(--muted); padding-left: 0; }
+
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.list-head h2 { margin: 0; }
+
+.request-list { list-style: none; margin: 0; padding: 0; }
+
+.request {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.request:first-child { border-top: 0; }
+
+.request .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.tag.urgency-高 { color: var(--high); border-color: currentColor; font-weight: 600; }
+.tag.urgency-中 { color: var(--mid); border-color: currentColor; }
+.tag.urgency-低 { color: var(--low); border-color: currentColor; }
+
+.request .desc {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.request .who {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
