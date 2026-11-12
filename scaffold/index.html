@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>系統鷹架計算</title>
+  <meta name="description" content="輸入外牆長度與搭設高度，估算系統鷹架單元長寬高與主架、橫桿、斜桿數量。">
+  <meta name="theme-color" content="#1d5fbf">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="鷹架計算">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>系統鷹架計算</h1>
+    <p>輸入外牆長度與搭設高度，估算單元長寬高與構件數量。可離線使用。</p>
+  </header>
+
+  <main>
+    <section class="card" aria-labelledby="input-title">
+      <h2 id="input-title">搭設條件</h2>
+      <form id="calc-form" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="wall">外牆長度（m）</label>
+            <input id="wall" name="wall" type="number" inputmode="decimal" min="0.1" step="0.01" value="20" required>
+          </div>
+          <div class="field">
+            <label for="height">搭設高度（m）</label>
+            <input id="height" name="height" type="number" inputmode="decimal" min="0.5" step="0.01" value="10" required>
+          </div>
+          <div class="field">
+            <label for="span">長（跨距，縱向橫桿）</label>
+            <select id="span" name="span"></select>
+          </div>
+          <div class="field">
+            <label for="width">寬（架寬，橫向橫桿）</label>
+            <select id="width" name="width"></select>
+          </div>
+          <div class="field">
+            <label for="step">高（每層步距）</label>
+            <select id="step" name="step"></select>
+          </div>
+          <div class="field">
+            <label for="brace">外側斜桿</label>
+            <select id="brace" name="brace">
+              <option value="1">每跨每層一支</option>
+              <option value="2">每 2 跨一支</option>
+              <option value="3">每 3 跨一支</option>
+              <option value="5">每 5 跨一支</option>
+            </select>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="guard" name="guard" checked> 外側每層加中欄杆、上欄杆（離踏面 0.5 m、1.0 m）</label>
+
+        <details class="settings">
+          <summary>構件規格</summary>
+          <div class="field">
+            <label for="standards">主架長度（m，以逗號分隔）</label>
+            <input id="standards" name="standards" type="text" value="0.5, 1.0, 1.5, 2.0">
+          </div>
+          <div class="field">
+            <label for="ledgers">橫桿長度（m，以逗號分隔）</label>
+            <input id="ledgers" name="ledgers" type="text" value="0.45, 0.61, 0.914, 1.219, 1.524, 1.829">
+          </div>
+          <p class="hint">預設範圍：主架 0.5～2.0 m、橫桿 0.45～1.829 m。中間的橫桿長度是依英制常見尺寸填入，請改成你實際採購的規格。主架長度須為 0.5 m 的倍數（圓盤間距 0.5 m）。</p>
+          <button type="button" id="reset-specs" class="link">恢復預設規格</button>
+        </details>
+
+        <p id="form-error" class="message error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="result-title">
+      <h2 id="result-title">估算結果</h2>
+      <div id="unit" class="unit"></div>
+      <dl id="summary" class="summary"></dl>
+      <table class="bom">
+        <thead><tr><th scope="col">構件</th><th scope="col">規格</th><th scope="col" class="num">數量</th></tr></thead>
+        <tbody id="bom"></tbody>
+      </table>
+      <ul id="warnings" class="warnings"></ul>
+      <p class="hint">僅供估算材料數量，不是結構計算。未含踏板、腳趾板、壁連座、上下設備等配件。主架以每支立柱從底到頂用最長料件組合計算，實際搭設請錯開接頭。依《營造安全衛生設施標準》，達一定高度（常見門檻為 5 m 以上）的施工架須由專任工程人員事先設計並簽章。</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span id="offline-status"></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
