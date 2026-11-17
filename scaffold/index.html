@@ -77,7 +77,15 @@
     <section class="card" aria-labelledby="result-title">
       <h2 id="result-title">估算結果</h2>
       <div id="unit" class="unit"></div>
+      <figure class="figure">
+        <div id="unit-drawing" class="drawing-box"></div>
+        <figcaption>單元示意圖：正面為外側，虛線為護欄，橘色為斜桿。</figcaption>
+      </figure>
       <dl id="summary" class="summary"></dl>
+      <figure class="figure">
+        <div id="elevation-drawing" class="drawing-box"></div>
+        <figcaption>外側立面圖：依目前的跨數、層數、斜桿配置與護欄繪製，左側人形約 1.7 m 作為比例參考。</figcaption>
+      </figure>
       <table class="bom">
         <thead><tr><th scope="col">構件</th><th scope="col">規格</th><th scope="col" class="num">數量</th></tr></thead>
         <tbody id="bom"></tbody>
@@ -85,12 +93,22 @@
       <ul id="warnings" class="warnings"></ul>
       <p class="hint">僅供估算材料數量，不是結構計算。未含踏板、腳趾板、壁連座、上下設備等配件。主架以每支立柱從底到頂用最長料件組合計算，實際搭設請錯開接頭。依《營造安全衛生設施標準》，達一定高度（常見門檻為 5 m 以上）的施工架須由專任工程人員事先設計並簽章。</p>
     </section>
+    <section class="card" aria-labelledby="parts-title">
+      <h2 id="parts-title">構件說明</h2>
+      <ul class="parts">
+        <li><span class="part-icon" data-icon="standard"></span><div><strong>主架（立柱）</strong><p>垂直受力的鋼管，每 0.5 m 一個圓盤，用來插接橫桿與斜桿。多支疊接決定總高度。</p></div></li>
+        <li><span class="part-icon" data-icon="ledger"></span><div><strong>橫桿</strong><p>水平連接兩支立柱。縱向橫桿決定「長」（跨距），橫向橫桿決定「寬」（架寬），也用作護欄。</p></div></li>
+        <li><span class="part-icon" data-icon="brace"></span><div><strong>斜桿</strong><p>斜向補強，防止架體受力扭曲變形。規格以「跨距 × 步距」表示，步距就是每層的「高」。</p></div></li>
+        <li><span class="part-icon" data-icon="jack"></span><div><strong>調整座</strong><p>立柱底部的可調螺桿與底板，用來調平地面高低差，並補足主架湊不齊的高度。</p></div></li>
+      </ul>
+    </section>
   </main>
 
   <footer class="site-footer">
     <span id="offline-status"></span>
   </footer>
 
+  <script src="drawings.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

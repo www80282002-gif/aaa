@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE = 'scaffold-calc-v1';
+const CACHE = 'scaffold-calc-v2';
 const ASSETS = [
   './',
   'index.html',
   'style.css',
+  'drawings.js',
   'app.js',
   'manifest.webmanifest',
   'icons/icon.svg',

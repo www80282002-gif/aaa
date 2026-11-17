@@ -145,3 +145,39 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1
 }
 
 .site-footer { color: var(--muted); font-size: 0.85rem; padding-bottom: 24px; }
+
+/* 示意圖與圖示 */
+:root { --steel: #3d4b5c; --brace: #d9730d; --deck: rgba(29, 95, 191, 0.18); --rosette: #1d5fbf; }
+@media (prefers-color-scheme: dark) {
+  :root { --steel: #c3ccd6; --brace: #f0a04b; --deck: rgba(91, 156, 240, 0.25); --rosette: #5b9cf0; }
+}
+
+.figure { margin: 0 0 16px; }
+.figure figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.drawing-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+.drawing { display: block; width: 100%; height: auto; max-height: 420px; overflow: visible; }
+
+.drawing .steel { stroke: var(--steel); stroke-width: 2.2; stroke-linecap: round; }
+.drawing .back .steel { stroke-width: 1.4; opacity: 0.45; }
+.drawing .rail { stroke-dasharray: 5 3; stroke-width: 1.6; }
+.drawing .brace { stroke: var(--brace); stroke-width: 2; stroke-linecap: round; }
+.drawing .deck { fill: var(--deck); stroke: none; }
+.drawing .rosette { fill: var(--rosette); }
+.drawing .back .rosette { opacity: 0.45; }
+.drawing .plate { fill: var(--steel); }
+.drawing .ground { stroke: var(--muted); stroke-width: 2; }
+.drawing .dim { stroke: var(--muted); stroke-width: 1; }
+.drawing .leader { stroke: var(--muted); stroke-width: 0.8; }
+.drawing .person { stroke: var(--muted); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+.drawing .person circle { fill: var(--muted); stroke: none; }
+.drawing .label { fill: var(--text); font-size: 13px; font-weight: 600; }
+.drawing .tag { fill: var(--muted); font-size: 12px; }
+
+.icon { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; flex: none; }
+.bom td.name { white-space: nowrap; }
+.bom td.name .icon { margin-right: 6px; color: var(--primary); }
+
+.parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.parts li { display: flex; gap: 12px; align-items: flex-start; }
+.parts p { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
+.part-icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 12px; background: var(--accent-bg); color: var(--primary); flex: none; }

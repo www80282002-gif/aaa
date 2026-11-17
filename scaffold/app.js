@@ -84,14 +84,17 @@ function showError(msg) {
   el.hidden = !msg;
 }
 
-function addRow(tbody, name, spec, qty, cls) {
+function addRow(tbody, name, spec, qty, cls, icon) {
   const tr = document.createElement('tr');
   if (cls) tr.className = cls;
-  for (const [text, c] of [[name], [spec], [String(qty), 'num']]) {
+  for (const [text, c] of [[name, 'name'], [spec], [String(qty), 'num']]) {
     const td = document.createElement('td');
     td.textContent = text;
     if (c) td.className = c;
     tr.appendChild(td);
+  }
+  if (icon && window.ScaffoldDrawings) {
+    tr.firstChild.insertAdjacentHTML('afterbegin', window.ScaffoldDrawings.iconSvg(icon, 20));
   }
   tbody.appendChild(tr);
 }
@@ -112,6 +115,8 @@ function calculate() {
   warnings.innerHTML = '';
   $('summary').innerHTML = '';
   $('unit').innerHTML = '';
+  $('unit-drawing').innerHTML = '';
+  $('elevation-drawing').innerHTML = '';
 
   if (!(L > 0) || !(H > 0)) return showError('請輸入大於 0 的外牆長度與搭設高度。');
   if (!standards.length) return showError('請輸入至少一種主架長度。');
@@ -140,6 +145,7 @@ function calculate() {
     ['實際搭設長度', `${fmt(actualL)} m（需求 ${fmt(L)} m）`],
     ['實際搭設高度', `${fmt(actualH)} m（需求 ${fmt(H)} m）`],
     ['立柱', `${columns} 支（${lines} 排 × 內外 2 側）`],
+    ['立柱高度', guard ? `外側 ${fmt(actualH + 1)} m（含頂層護欄 1 m）、內側 ${fmt(actualH)} m` : `${fmt(actualH)} m`],
     ['工作面積（每層）', `${fmt(actualL * width)} m²`],
   ]) {
     const dt = document.createElement('dt'); dt.textContent = k;
@@ -147,34 +153,49 @@ function calculate() {
     summary.append(dt, dd);
   }
 
-  const { pieces, rest } = composeColumn(actualH, standards);
+  // 護欄高度：離踏面 0.5 m、1.0 m；若與上一層橫桿同高就不重複計算（頂層除外）。
+  const rails = (lv) => [0.5, 1.0].filter((h) => lv === levels || h < step - 1e-9);
+  const railCount = guard ? Array.from({ length: levels }, (_, i) => rails(i + 1).length).reduce((a, b) => a + b, 0) : 0;
+
+  // 外側立柱多立 1.0 m 給頂層護欄；內側立柱到搭設高度。
+  const pieceQty = new Map();
+  let rest = 0;
+  for (const [h, count] of [[actualH + (guard ? 1.0 : 0), lines], [actualH, lines]]) {
+    const c = composeColumn(h, standards);
+    rest = Math.max(rest, c.rest);
+    for (const [cm, n] of c.pieces) pieceQty.set(cm, (pieceQty.get(cm) || 0) + n * count);
+  }
   let total = 0;
-  for (const [cm, n] of [...pieces.entries()].sort((a, b) => b[0] - a[0])) {
-    const qty = n * columns;
+  for (const [cm, qty] of [...pieceQty.entries()].sort((a, b) => b[0] - a[0])) {
     total += qty;
-    addRow(tbody, '主架', `${fmt(cm / 100)} m`, qty);
+    addRow(tbody, '主架', `${fmt(cm / 100)} m`, qty, '', 'standard');
   }
 
   const ledgerQty = new Map();
   const addLedger = (len, qty) => ledgerQty.set(len, (ledgerQty.get(len) || 0) + qty);
   addLedger(span, tiers * 2 * bays);          // 縱向橫桿：內外兩側、每層含底層
   addLedger(width, tiers * lines);            // 橫向橫桿
-  if (guard) addLedger(span, levels * 2 * bays); // 外側中欄杆＋上欄杆
+  addLedger(span, railCount * bays);          // 外側護欄（中欄杆、上欄杆）
   for (const [len, qty] of ledgerQty) {
     total += qty;
-    addRow(tbody, '橫桿', `${fmt(len)} m${len === span && len === width ? '（縱、橫向）' : len === span ? '（縱向）' : '（橫向）'}`, qty);
+    addRow(tbody, '橫桿', `${fmt(len)} m${len === span && len === width ? '（縱、橫向）' : len === span ? '（縱向，含護欄）' : '（橫向）'}`, qty, '', 'ledger');
   }
 
   const braces = levels * Math.ceil(bays / braceEvery);
   total += braces;
-  addRow(tbody, '斜桿', `${fmt(span)} × ${fmt(step)} m`, braces);
+  addRow(tbody, '斜桿', `${fmt(span)} × ${fmt(step)} m`, braces, '', 'brace');
 
-  addRow(tbody, '調整座', '每支立柱 1 個', columns);
+  addRow(tbody, '調整座', '每支立柱 1 個', columns, '', 'jack');
   total += columns;
   addRow(tbody, '合計', '', total, 'total');
 
+  if (window.ScaffoldDrawings) {
+    window.ScaffoldDrawings.drawUnit($('unit-drawing'), span, width, step);
+    window.ScaffoldDrawings.drawElevation($('elevation-drawing'), { bays, levels, span, step, braceEvery, guard, rails });
+  }
+
   const warn = (t) => { const li = document.createElement('li'); li.textContent = t; warnings.appendChild(li); };
-  if (rest > 0) warn(`主架無法剛好湊出 ${fmt(actualH)} m，差 ${fmt(rest / 100)} m，請補較短主架或以調整座補足。`);
+  if (rest > 0) warn(`主架無法剛好湊出所需高度，差 ${fmt(rest / 100)} m，請補較短主架或以調整座補足。`);
   if (width < 0.45) warn('架寬小於 0.45 m，鋪踏板後工作台淨寬可能不足 40 cm。');
   if (actualH >= 5) warn('搭設高度達 5 m 以上，依規定須由專任工程人員事先設計並簽章。');
   if (step > 2.0) warn('步距超過 2.0 m，請確認設計。');
@@ -205,6 +226,12 @@ refreshOptions();
 applyState(saved);
 refreshOptions();
 calculate();
+
+if (window.ScaffoldDrawings) {
+  for (const el of document.querySelectorAll('.part-icon')) {
+    el.innerHTML = window.ScaffoldDrawings.iconSvg(el.dataset.icon, 40);
+  }
+}
 
 function updateOnline() {
   $('offline-status').textContent = navigator.onLine ? '' : '目前離線，計算功能仍可使用。';
