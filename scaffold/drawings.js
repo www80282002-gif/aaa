@@ -115,37 +115,62 @@ function drawUnit(container, span, width, step) {
   fitViewBox(svg, 12);
 }
 
-// 外側立面圖：依跨數、層數、斜桿配置與護欄畫出整面施工架。
+// 依序排出各段：直線段（n 跨）與轉角單元（外側攤開為兩邊各一個架寬）。
+function segmentsOf(runs, closed) {
+  const segs = [];
+  runs.forEach((n, i) => {
+    segs.push({ type: 'run', n, index: i });
+    if (i < runs.length - 1 || closed) segs.push({ type: 'corner' });
+  });
+  return segs;
+}
+
+// 外側展開立面圖：依跨數、層數、斜桿配置與護欄畫出整面施工架，轉角單元攤開顯示。
 function drawElevation(container, o) {
-  const { bays, levels, span, step, braceEvery, guard, rails } = o;
-  const L = bays * span;
+  const { runs, closed, levels, span, width, step, braceEvery, guard, rails } = o;
+  const segs = segmentsOf(runs, closed);
+  const L = segs.reduce((a, sg) => a + (sg.type === 'run' ? sg.n * span : width * 2), 0);
   const H = levels * step;
   const top = H + (guard ? 1.0 : 0);
-  const svg = newSvg(container, `外側立面圖：${bays} 跨 × ${levels} 層，長 ${fmtM(L)}、高 ${fmtM(H)}`);
+  const bays = runs.reduce((a, b) => a + b, 0);
+  const corners = segs.length - runs.length;
+  const svg = newSvg(container, `外側展開立面圖：${bays} 跨${corners ? `、${corners} 個轉角` : ''} × ${levels} 層，展開長 ${fmtM(L)}、高 ${fmtM(H)}`);
   const f = Math.min(290 / (L + 1.6), 260 / (top + 0.6));
   const P = (x, z) => [x * f, -z * f];
+  const bg = svgEl('g', {}, svg);
   const g = svgEl('g', {}, svg);
 
   line(g, P(-1.6, -0.3), P(L + 0.4, -0.3), 'ground');
 
-  for (let i = 0; i <= bays; i++) {
-    line(g, P(i * span, -0.3), P(i * span, top), 'steel');
+  const posts = [0];
+  let x = 0;
+  for (const sg of segs) {
+    if (sg.type === 'run') {
+      for (let lv = 0; lv < levels; lv++) {
+        for (let i = 0; i < sg.n; i += braceEvery) {
+          const x0 = x + i * span;
+          const a = lv % 2 ? [x0, (lv + 1) * step] : [x0, lv * step];
+          const b = lv % 2 ? [x0 + span, lv * step] : [x0 + span, (lv + 1) * step];
+          line(g, P(...a), P(...b), 'brace');
+        }
+      }
+      for (let i = 1; i <= sg.n; i++) posts.push(x + i * span);
+      x += sg.n * span;
+    } else {
+      const p0 = P(x, top);
+      svgEl('rect', { x: r1(p0[0]), y: r1(p0[1]), width: r1(width * 2 * f), height: r1(top * f), class: 'corner-bg' }, bg);
+      posts.push(x + width, x + width * 2);
+      x += width * 2;
+    }
   }
+  for (const px of posts) line(g, P(px, -0.3), P(px, top), 'steel');
   for (let t = 0; t <= levels; t++) {
     line(g, P(0, t * step), P(L, t * step), 'steel');
-    if (t > 0) svgEl('rect', { x: r1(0), y: r1(-t * step * f - 0.08 * f), width: r1(L * f), height: r1(Math.max(0.08 * f, 1.5)), class: 'deck' }, g);
+    if (t > 0) svgEl('rect', { x: 0, y: r1(-t * step * f - 0.08 * f), width: r1(L * f), height: r1(Math.max(0.08 * f, 1.5)), class: 'deck' }, g);
   }
   if (guard) {
     for (let lv = 1; lv <= levels; lv++) {
       for (const h of rails(lv)) line(g, P(0, lv * step + h), P(L, lv * step + h), 'steel rail');
-    }
-  }
-  for (let lv = 0; lv < levels; lv++) {
-    for (let i = 0; i < bays; i += braceEvery) {
-      const x0 = i * span;
-      const a = lv % 2 ? [x0, (lv + 1) * step] : [x0, lv * step];
-      const b = lv % 2 ? [x0 + span, lv * step] : [x0 + span, (lv + 1) * step];
-      line(g, P(...a), P(...b), 'brace');
     }
   }
 
@@ -161,10 +186,9 @@ function drawElevation(container, o) {
   line(person, P(px + 0.3, 1.0), P(px, 1.3), '');
 
   const dims = svgEl('g', { class: 'dims' }, svg);
-  const yb = -0.3;
-  const base = P(0, yb)[1] + 22;
+  const base = P(0, -0.3)[1] + 22;
   line(dims, [0, base - 8], [L * f, base - 8], 'dim');
-  text(dims, [L * f / 2, base + 8], `總長 ${fmtM(L)}（${bays} 跨 × ${fmtM(span)}）`);
+  text(dims, [L * f / 2, base + 8], corners ? `外側展開長 ${fmtM(L)}（${bays} 跨 ＋ ${corners} 轉角）` : `總長 ${fmtM(L)}（${bays} 跨 × ${fmtM(span)}）`);
   const xr = L * f + 14;
   line(dims, [xr, 0], [xr, -H * f], 'dim');
   text(dims, [xr + 6, -H * f / 2 + 5], `${fmtM(H)}`, 'label', 'start');
@@ -174,4 +198,76 @@ function drawElevation(container, o) {
   fitViewBox(svg, 10);
 }
 
-window.ScaffoldDrawings = { drawUnit, drawElevation, iconSvg };
+// 平面圖：沿建物外牆順時針排列，每個外轉角向右轉 90°。
+function drawPlan(container, o) {
+  const { runs, span, width, closed } = o;
+  const corners = closed ? runs.length : runs.length - 1;
+  const svg = newSvg(container, `平面圖：${runs.length} 面外牆、${corners} 個外轉角`);
+  const total = runs.reduce((a, n) => a + n * span, 0);
+  const dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+  // 依最長的兩個方向估比例，讓圖寬約 300。
+  let minX = 0, maxX = 0, minY = 0, maxY = 0, cx = 0, cy = 0;
+  runs.forEach((n, i) => {
+    const d = dirs[i % 4];
+    cx += d[0] * n * span; cy += d[1] * n * span;
+    minX = Math.min(minX, cx); maxX = Math.max(maxX, cx); minY = Math.min(minY, cy); maxY = Math.max(maxY, cy);
+  });
+  const extent = Math.max(maxX - minX, maxY - minY, total > 0 ? 1 : 1) + width * 2;
+  const f = 300 / extent;
+  const P = (pt) => [pt[0] * f, pt[1] * f];
+  const add = (a, b, k) => [a[0] + b[0] * k, a[1] + b[1] * k];
+
+  const bld = svgEl('g', {}, svg);
+  const band = svgEl('g', {}, svg);
+  const cols = svgEl('g', {}, svg);
+  const dims = svgEl('g', { class: 'dims' }, svg);
+
+  let cur = [0, 0];
+  const wallPts = [cur];
+  const colPts = [];
+  runs.forEach((n, i) => {
+    const d = dirs[i % 4];
+    const nrm = [d[1], -d[0]]; // 外側法向
+    const len = n * span;
+    const end = add(cur, d, len);
+    const quad = [cur, end, add(end, nrm, width), add(cur, nrm, width)].map(P);
+    svgEl('polygon', { points: quad.map((p) => p.map(r1).join(',')).join(' '), class: 'plan-band' }, band);
+    for (let k = 0; k <= n; k++) {
+      const a = add(cur, d, k * span);
+      colPts.push(a, add(a, nrm, width));
+    }
+    // 牆長標註（外側）
+    const mid = add(add(cur, d, len / 2), nrm, width + 0.25 * extent / 10 + 0.3);
+    const m = P(mid);
+    const anchor = nrm[0] > 0 ? 'start' : nrm[0] < 0 ? 'end' : 'middle';
+    text(dims, [m[0], m[1] + (nrm[1] > 0 ? 12 : nrm[1] < 0 ? -2 : 4)], `${i + 1}. ${fmtM(len)}`, 'tag', anchor);
+
+    if (i < runs.length - 1 || closed) {
+      const sq = [end, add(end, d, width), add(add(end, d, width), nrm, width), add(end, nrm, width)].map(P);
+      svgEl('polygon', { points: sq.map((p) => p.map(r1).join(',')).join(' '), class: 'plan-corner' }, band);
+      colPts.push(add(add(end, d, width), nrm, width));
+    }
+    cur = end;
+    wallPts.push(cur);
+  });
+
+  const pts = wallPts.map((p) => P(p).map(r1).join(',')).join(' ');
+  if (closed) svgEl('polygon', { points: pts, class: 'plan-building' }, bld);
+  svgEl('polyline', { points: pts, class: 'plan-wall' }, bld);
+
+  const seen = new Set();
+  for (const c of colPts) {
+    const p = P(c);
+    const key = `${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    svgEl('circle', { cx: r1(p[0]), cy: r1(p[1]), r: 2.2, class: 'plan-col' }, cols);
+  }
+  if (closed) {
+    const c = P([(minX + maxX) / 2, (minY + maxY) / 2]);
+    text(dims, [c[0], c[1] + 4], '建物', 'tag');
+  }
+  fitViewBox(svg, 14);
+}
+
+window.ScaffoldDrawings = { drawUnit, drawPlan, drawElevation, iconSvg };

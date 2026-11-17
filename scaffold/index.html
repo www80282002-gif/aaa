@@ -26,7 +26,15 @@
         <div class="grid">
           <div class="field">
             <label for="wall">外牆長度（m）</label>
-            <input id="wall" name="wall" type="number" inputmode="decimal" min="0.1" step="0.01" value="20" required>
+            <input id="wall" name="wall" type="text" inputmode="decimal" value="20" required aria-describedby="wall-hint">
+            <small id="wall-hint" class="hint">有轉角時依序輸入各面長度，以逗號分隔，例如 20, 12</small>
+          </div>
+          <div class="field">
+            <label for="layout">轉角配置</label>
+            <select id="layout" name="layout">
+              <option value="open">兩端開口（轉角數 = 面數 − 1）</option>
+              <option value="closed">四周環繞（轉角數 = 面數）</option>
+            </select>
           </div>
           <div class="field">
             <label for="height">搭設高度（m）</label>
@@ -83,8 +91,12 @@
       </figure>
       <dl id="summary" class="summary"></dl>
       <figure class="figure">
+        <div id="plan-drawing" class="drawing-box"></div>
+        <figcaption>平面圖：灰色為建物，藍色為施工架，橘色方格為轉角單元，圓點為立柱。依實際搭設長度繪製。</figcaption>
+      </figure>
+      <figure class="figure">
         <div id="elevation-drawing" class="drawing-box"></div>
-        <figcaption>外側立面圖：依目前的跨數、層數、斜桿配置與護欄繪製，左側人形約 1.7 m 作為比例參考。</figcaption>
+        <figcaption>外側展開立面圖：各面依序攤開，淡橘底色為轉角單元。依目前的跨數、層數、斜桿配置與護欄繪製，左側人形約 1.7 m 作為比例參考。</figcaption>
       </figure>
       <table class="bom">
         <thead><tr><th scope="col">構件</th><th scope="col">規格</th><th scope="col" class="num">數量</th></tr></thead>

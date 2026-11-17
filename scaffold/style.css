@@ -181,3 +181,12 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1
 .parts li { display: flex; gap: 12px; align-items: flex-start; }
 .parts p { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
 .part-icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 12px; background: var(--accent-bg); color: var(--primary); flex: none; }
+
+/* 平面圖與轉角 */
+.drawing .corner-bg { fill: var(--brace); opacity: 0.28; }
+.drawing .plan-band { fill: var(--deck); stroke: var(--primary); stroke-width: 1; }
+.drawing .plan-corner { fill: var(--brace); fill-opacity: 0.35; stroke: var(--brace); stroke-width: 1.2; }
+.drawing .plan-building { fill: var(--muted); opacity: 0.15; }
+.drawing .plan-wall { fill: none; stroke: var(--muted); stroke-width: 3; stroke-linejoin: round; }
+.drawing .plan-col { fill: var(--steel); }
+.field small.hint { margin: 0; }

@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'scaffold-calc-v2';
+const CACHE = 'scaffold-calc-v3';
 const ASSETS = [
   './',
   'index.html',

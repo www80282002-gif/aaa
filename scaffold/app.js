@@ -99,14 +99,21 @@ function addRow(tbody, name, spec, qty, cls, icon) {
   tbody.appendChild(tr);
 }
 
+function parseWalls(text) {
+  const parts = String(text).split(/[,，、\s]+/).filter(Boolean).map(Number);
+  if (!parts.length || parts.some((n) => !(n > 0))) return null;
+  return parts;
+}
+
 function calculate() {
-  const L = Number($('wall').value);
+  const walls = parseWalls($('wall').value);
   const H = Number($('height').value);
   const span = Number($('span').value);
   const width = Number($('width').value);
   const step = Number($('step').value);
   const braceEvery = Number($('brace').value) || 1;
   const guard = $('guard').checked;
+  const closed = $('layout').value === 'closed';
   const standards = parseList($('standards').value);
 
   const tbody = $('bom');
@@ -115,22 +122,29 @@ function calculate() {
   warnings.innerHTML = '';
   $('summary').innerHTML = '';
   $('unit').innerHTML = '';
-  $('unit-drawing').innerHTML = '';
-  $('elevation-drawing').innerHTML = '';
+  for (const id of ['unit-drawing', 'plan-drawing', 'elevation-drawing']) $(id).innerHTML = '';
 
-  if (!(L > 0) || !(H > 0)) return showError('請輸入大於 0 的外牆長度與搭設高度。');
+  if (!walls || !(H > 0)) return showError('請輸入大於 0 的外牆長度（多面以逗號分隔）與搭設高度。');
+  if (closed && walls.length < 2) return showError('四周環繞至少要有 2 面外牆。');
   if (!standards.length) return showError('請輸入至少一種主架長度。');
   if (!(span > 0) || !(width > 0)) return showError('請輸入至少一種橫桿長度。');
   if (standards.some((s) => toCm(s) % 50 !== 0)) return showError('主架長度須為 0.5 m 的倍數。');
   showError('');
 
-  const bays = Math.ceil(L / span - 1e-9);
+  // 每一面外牆各自一段直線施工架；外轉角（陽角）以「架寬 × 架寬」的轉角單元連接。
+  const runs = walls.map((w) => Math.ceil(w / span - 1e-9));
+  const corners = closed ? walls.length : walls.length - 1;
+  const bays = runs.reduce((a, b) => a + b, 0);
+  const lines = runs.reduce((a, n) => a + n + 1, 0);
   const levels = Math.ceil(H / step - 1e-9);
-  const actualL = bays * span;
   const actualH = levels * step;
-  const lines = bays + 1;          // 沿外牆方向的立柱排數
-  const columns = lines * 2;       // 內、外兩側
   const tiers = levels + 1;        // 含底層掃地桿
+  const runLength = bays * span;
+  const totalL = walls.reduce((a, b) => a + b, 0);
+  // 轉角處：相鄰兩段的內側端柱共用一支（-1 內側），轉角外角多一支外側立柱（+1 外側）。
+  const outerCols = lines + corners;
+  const innerCols = lines - corners;
+  const columns = outerCols + innerCols;
 
   const unit = $('unit');
   for (const [label, v] of [['長（跨距）', span], ['寬（架寬）', width], ['高（步距）', step]]) {
@@ -140,14 +154,19 @@ function calculate() {
   }
 
   const summary = $('summary');
-  for (const [k, v] of [
-    ['跨數 × 層數', `${bays} 跨 × ${levels} 層`],
-    ['實際搭設長度', `${fmt(actualL)} m（需求 ${fmt(L)} m）`],
+  const rows = [
+    ['外牆', walls.length > 1 ? `${walls.length} 面，${corners} 個外轉角` : '1 面（直線）'],
+    ['跨數 × 層數', `${bays} 跨${corners ? ` ＋ ${corners} 個轉角單元` : ''} × ${levels} 層`],
+  ];
+  if (walls.length > 1) rows.push(['各面跨數', runs.map((n, i) => `${fmt(walls[i])} m → ${n} 跨`).join('；')]);
+  rows.push(
+    ['實際搭設長度', `${fmt(runLength + corners * width)} m（直線段 ${fmt(runLength)} m${corners ? ` ＋ 轉角 ${corners} × ${fmt(width)} m` : ''}；外牆 ${fmt(totalL)} m）`],
     ['實際搭設高度', `${fmt(actualH)} m（需求 ${fmt(H)} m）`],
-    ['立柱', `${columns} 支（${lines} 排 × 內外 2 側）`],
+    ['立柱', `${columns} 支（外側 ${outerCols}、內側 ${innerCols}）`],
     ['立柱高度', guard ? `外側 ${fmt(actualH + 1)} m（含頂層護欄 1 m）、內側 ${fmt(actualH)} m` : `${fmt(actualH)} m`],
-    ['工作面積（每層）', `${fmt(actualL * width)} m²`],
-  ]) {
+    ['工作面積（每層）', `${fmt((runLength + corners * width) * width)} m²`],
+  );
+  for (const [k, v] of rows) {
     const dt = document.createElement('dt'); dt.textContent = k;
     const dd = document.createElement('dd'); dd.textContent = v;
     summary.append(dt, dd);
@@ -160,7 +179,7 @@ function calculate() {
   // 外側立柱多立 1.0 m 給頂層護欄；內側立柱到搭設高度。
   const pieceQty = new Map();
   let rest = 0;
-  for (const [h, count] of [[actualH + (guard ? 1.0 : 0), lines], [actualH, lines]]) {
+  for (const [h, count] of [[actualH + (guard ? 1.0 : 0), outerCols], [actualH, innerCols]]) {
     const c = composeColumn(h, standards);
     rest = Math.max(rest, c.rest);
     for (const [cm, n] of c.pieces) pieceQty.set(cm, (pieceQty.get(cm) || 0) + n * count);
@@ -174,14 +193,18 @@ function calculate() {
   const ledgerQty = new Map();
   const addLedger = (len, qty) => ledgerQty.set(len, (ledgerQty.get(len) || 0) + qty);
   addLedger(span, tiers * 2 * bays);          // 縱向橫桿：內外兩側、每層含底層
-  addLedger(width, tiers * lines);            // 橫向橫桿
   addLedger(span, railCount * bays);          // 外側護欄（中欄杆、上欄杆）
+  addLedger(width, tiers * lines);            // 橫向橫桿
+  addLedger(width, corners * 2 * (tiers + railCount)); // 轉角單元外側兩邊的橫桿與護欄
   for (const [len, qty] of ledgerQty) {
     total += qty;
-    addRow(tbody, '橫桿', `${fmt(len)} m${len === span && len === width ? '（縱、橫向）' : len === span ? '（縱向，含護欄）' : '（橫向）'}`, qty, '', 'ledger');
+    const note = len === span && len === width ? '（縱、橫向，含轉角與護欄）'
+      : len === span ? '（縱向，含護欄）'
+      : corners ? '（橫向，含轉角）' : '（橫向）';
+    addRow(tbody, '橫桿', `${fmt(len)} m${note}`, qty, '', 'ledger');
   }
 
-  const braces = levels * Math.ceil(bays / braceEvery);
+  const braces = levels * runs.reduce((a, n) => a + Math.ceil(n / braceEvery), 0);
   total += braces;
   addRow(tbody, '斜桿', `${fmt(span)} × ${fmt(step)} m`, braces, '', 'brace');
 
@@ -190,8 +213,10 @@ function calculate() {
   addRow(tbody, '合計', '', total, 'total');
 
   if (window.ScaffoldDrawings) {
-    window.ScaffoldDrawings.drawUnit($('unit-drawing'), span, width, step);
-    window.ScaffoldDrawings.drawElevation($('elevation-drawing'), { bays, levels, span, step, braceEvery, guard, rails });
+    const D = window.ScaffoldDrawings;
+    D.drawUnit($('unit-drawing'), span, width, step);
+    D.drawPlan($('plan-drawing'), { runs, span, width, closed });
+    D.drawElevation($('elevation-drawing'), { runs, closed, levels, span, width, step, braceEvery, guard, rails });
   }
 
   const warn = (t) => { const li = document.createElement('li'); li.textContent = t; warnings.appendChild(li); };
@@ -199,6 +224,10 @@ function calculate() {
   if (width < 0.45) warn('架寬小於 0.45 m，鋪踏板後工作台淨寬可能不足 40 cm。');
   if (actualH >= 5) warn('搭設高度達 5 m 以上，依規定須由專任工程人員事先設計並簽章。');
   if (step > 2.0) warn('步距超過 2.0 m，請確認設計。');
+  if (closed && (walls.length !== 4 || Math.abs(runs[0] - runs[2]) > 0 || Math.abs(runs[1] - runs[3]) > 0)) {
+    warn('四周環繞只計算外轉角，適用於矩形建物（4 面、對邊跨數相同）。有內轉角（陰角）的建物請分段計算。');
+  }
+  if (corners) warn('轉角單元依一般做法估算（外側兩邊加橫桿與護欄、不加斜桿），實際轉角做法請依設計圖。');
 }
 
 function onChange(e) {
