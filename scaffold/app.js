@@ -4,6 +4,7 @@ const DEFAULT_STANDARDS = '0.5, 1.0, 1.5, 2.0';
 const DEFAULT_LEDGERS = '0.45, 0.61, 0.914, 1.219, 1.524, 1.829';
 const STEPS = [1.0, 1.5, 2.0];
 const STORAGE_KEY = 'scaffold-calc-v1';
+const PRICE_KEY = 'scaffold-prices-v1';
 
 const $ = (id) => document.getElementById(id);
 const form = $('calc-form');
@@ -84,7 +85,17 @@ function showError(msg) {
   el.hidden = !msg;
 }
 
-function addRow(tbody, name, spec, qty, cls, icon) {
+// 單價只存在這台裝置的 localStorage，不寫進程式碼也不上傳。
+function loadPrices() {
+  try { return JSON.parse(localStorage.getItem(PRICE_KEY)) || {}; } catch { return {}; }
+}
+let prices = loadPrices();
+function savePrices() {
+  try { localStorage.setItem(PRICE_KEY, JSON.stringify(prices)); } catch { /* storage unavailable: ignore */ }
+}
+const money = (n) => Math.round(n).toLocaleString('zh-TW');
+
+function addRow(tbody, name, spec, qty, cls, icon, priceKey) {
   const tr = document.createElement('tr');
   if (cls) tr.className = cls;
   for (const [text, c] of [[name, 'name'], [spec], [String(qty), 'num']]) {
@@ -93,10 +104,58 @@ function addRow(tbody, name, spec, qty, cls, icon) {
     if (c) td.className = c;
     tr.appendChild(td);
   }
+  const priceTd = document.createElement('td');
+  priceTd.className = 'num';
+  const costTd = document.createElement('td');
+  costTd.className = 'num cost';
+  if (priceKey) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.inputMode = 'decimal';
+    input.min = '0';
+    input.step = 'any';
+    input.className = 'price';
+    input.setAttribute('aria-label', `${name} ${spec} 單價`);
+    if (prices[priceKey] > 0) input.value = String(prices[priceKey]);
+    input.addEventListener('input', () => {
+      const v = Number(input.value);
+      if (input.value !== '' && v >= 0) prices[priceKey] = v; else delete prices[priceKey];
+      savePrices();
+      updateCost();
+    });
+    priceTd.appendChild(input);
+    tr.dataset.qty = String(qty);
+    tr.dataset.priceKey = priceKey;
+  }
+  tr.append(priceTd, costTd);
   if (icon && window.ScaffoldDrawings) {
     tr.firstChild.insertAdjacentHTML('afterbegin', window.ScaffoldDrawings.iconSvg(icon, 20));
   }
   tbody.appendChild(tr);
+}
+
+// 只更新小計與總金額，不重畫表格，輸入單價時游標不會跳走。
+function updateCost() {
+  let sum = 0;
+  let missing = 0;
+  for (const tr of $('bom').querySelectorAll('tr[data-price-key]')) {
+    const p = prices[tr.dataset.priceKey];
+    const cell = tr.querySelector('.cost');
+    if (p > 0) {
+      const sub = p * Number(tr.dataset.qty);
+      sum += sub;
+      cell.textContent = money(sub);
+    } else {
+      missing += 1;
+      cell.textContent = '';
+    }
+  }
+  const total = $('bom').querySelector('tr.total .cost');
+  if (total) total.textContent = sum > 0 ? money(sum) : '';
+  const note = $('cost-note');
+  if (sum > 0 && missing) note.textContent = `尚有 ${missing} 項未填單價，總金額未含這些項目。`;
+  else if (sum > 0) note.textContent = '金額＝數量 × 單價，未含運費、稅金與配件。';
+  else note.textContent = '在「單價」欄輸入每支的價格，就會算出小計與總金額。單價只存在這台裝置，不會上傳。';
 }
 
 function parseWalls(text) {
@@ -122,6 +181,7 @@ function calculate() {
   warnings.innerHTML = '';
   $('summary').innerHTML = '';
   $('unit').innerHTML = '';
+  $('cost-note').textContent = '';
   for (const id of ['unit-drawing', 'plan-drawing', 'elevation-drawing']) $(id).innerHTML = '';
 
   if (!walls || !(H > 0)) return showError('請輸入大於 0 的外牆長度（多面以逗號分隔）與搭設高度。');
@@ -187,7 +247,7 @@ function calculate() {
   let total = 0;
   for (const [cm, qty] of [...pieceQty.entries()].sort((a, b) => b[0] - a[0])) {
     total += qty;
-    addRow(tbody, '主架', `${fmt(cm / 100)} m`, qty, '', 'standard');
+    addRow(tbody, '主架', `${fmt(cm / 100)} m`, qty, '', 'standard', `standard:${fmt(cm / 100)}`);
   }
 
   const ledgerQty = new Map();
@@ -201,16 +261,17 @@ function calculate() {
     const note = len === span && len === width ? '（縱、橫向，含轉角與護欄）'
       : len === span ? '（縱向，含護欄）'
       : corners ? '（橫向，含轉角）' : '（橫向）';
-    addRow(tbody, '橫桿', `${fmt(len)} m${note}`, qty, '', 'ledger');
+    addRow(tbody, '橫桿', `${fmt(len)} m${note}`, qty, '', 'ledger', `ledger:${fmt(len)}`);
   }
 
   const braces = levels * runs.reduce((a, n) => a + Math.ceil(n / braceEvery), 0);
   total += braces;
-  addRow(tbody, '斜桿', `${fmt(span)} × ${fmt(step)} m`, braces, '', 'brace');
+  addRow(tbody, '斜桿', `${fmt(span)} × ${fmt(step)} m`, braces, '', 'brace', `brace:${fmt(span)}x${fmt(step)}`);
 
-  addRow(tbody, '調整座', '每支立柱 1 個', columns, '', 'jack');
+  addRow(tbody, '調整座', '每支立柱 1 個', columns, '', 'jack', 'jack');
   total += columns;
   addRow(tbody, '合計', '', total, 'total');
+  updateCost();
 
   if (window.ScaffoldDrawings) {
     const D = window.ScaffoldDrawings;

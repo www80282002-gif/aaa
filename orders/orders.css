@@ -1,0 +1,64 @@
+/* 訂單登記頁面的補充樣式；共用樣式在 ../style.css */
+
+.notice {
+  color: var(--mid);
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 12px;
+}
+
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.field .label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+input[type="number"],
+input[type="date"] {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 48px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.order .line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0 0;
+}
+
+.order .product { font-weight: 600; overflow-wrap: anywhere; }
+
+.order .amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.order .sub { color: var(--muted); font-size: 0.9rem; margin: 4px 0 0; }
+
+.tag.status-未出貨 { color: var(--mid); border-color: currentColor; }
+.tag.status-已出貨 { color: var(--low); border-color: currentColor; }

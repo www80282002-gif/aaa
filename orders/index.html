@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>訂單登記</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="orders.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>訂單登記</h1>
+    <p>登記客戶訂購的品項，集中查看最近的訂單明細。</p>
+    <p class="notice">示範用：清單任何人都看得到，請只填虛構的客戶與價格。</p>
+  </header>
+
+  <main>
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">新增訂單明細</h2>
+      <form id="order-form" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="customer">客戶</label>
+            <input id="customer" name="customer" type="text" maxlength="50" required placeholder="例如：虛構營造" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="order_date">訂購日期</label>
+            <input id="order_date" name="order_date" type="date" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="product">品名</label>
+          <input id="product" name="product" type="text" maxlength="100" required list="product-list" autocomplete="off">
+          <datalist id="product-list">
+            <option value="主架48.6mm T:2.5mm 0.5m 熱浸">
+            <option value="主架48.6mm T:2.5mm 1.0m 熱浸">
+            <option value="主架48.6mm T:2.5mm 1.5m 熱浸">
+            <option value="主架48.6mm T:2.5mm 1.8m 熱浸">
+            <option value="主架48.6mm T:2.5mm 2.0m 熱浸">
+            <option value="橫桿42.7mm T:2.3mm 0.762m 熱浸">
+            <option value="橫桿42.7mm T:2.3mm 0.914m 熱浸">
+            <option value="橫桿42.7mm T:2.3mm 1.2m 熱浸">
+            <option value="橫桿42.7mm T:2.3mm 1.829m 熱浸">
+            <option value="斜桿42.7mm T:2.3mm 1.829mx2.0 熱浸">
+            <option value="平面調整座38.5x600mm">
+            <option value="U型調整座48.2x600mm">
+            <option value="踏板265x1800mm">
+            <option value="G型銷">
+          </datalist>
+          <small class="hint">可從清單選，也可直接輸入。</small>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="field">
+            <label for="unit_price">售價</label>
+            <input id="unit_price" name="unit_price" type="number" inputmode="decimal" min="0" step="any" required>
+          </div>
+          <div class="field">
+            <label for="qty">數量</label>
+            <input id="qty" name="qty" type="number" inputmode="numeric" min="1" step="1" required>
+          </div>
+          <div class="field">
+            <span class="label">總售價</span>
+            <output id="total" for="unit_price qty" class="total">—</output>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="expected_ship">預計出貨日（選填）</label>
+            <input id="expected_ship" name="expected_ship" type="date">
+          </div>
+          <div class="field">
+            <label for="note">備註（選填）</label>
+            <input id="note" name="note" type="text" maxlength="200">
+          </div>
+        </div>
+
+        <button id="submit-btn" type="submit">送出</button>
+        <p id="form-message" class="message" role="status" aria-live="polite" hidden></p>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="list-title">
+      <div class="list-head">
+        <h2 id="list-title">最近 30 筆訂單明細</h2>
+        <button id="refresh-btn" type="button" class="secondary">重新整理</button>
+      </div>
+      <p id="list-message" class="message" role="status" aria-live="polite" hidden></p>
+      <ul id="order-list" class="request-list"></ul>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="../config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
