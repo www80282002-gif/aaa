@@ -3,94 +3,291 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>訂單登記</title>
+  <meta name="robots" content="noindex">
+  <title>客戶訂單</title>
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="orders.css">
 </head>
 <body>
   <header class="site-header">
-    <h1>訂單登記</h1>
-    <p>登記客戶訂購的品項，集中查看最近的訂單明細。</p>
-    <p class="notice">示範用：清單任何人都看得到，請只填虛構的客戶與價格。</p>
+    <div class="head-row">
+      <h1>客戶訂單</h1>
+      <button id="logout-btn" type="button" class="secondary" hidden>登出</button>
+    </div>
+    <p id="who" class="hint"></p>
   </header>
 
   <main>
-    <section class="card" aria-labelledby="form-title">
-      <h2 id="form-title">新增訂單明細</h2>
-      <form id="order-form" novalidate>
-        <div class="grid">
-          <div class="field">
-            <label for="customer">客戶</label>
-            <input id="customer" name="customer" type="text" maxlength="50" required placeholder="例如：虛構營造" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="order_date">訂購日期</label>
-            <input id="order_date" name="order_date" type="date" required>
-          </div>
-        </div>
+    <p id="global-message" class="message" role="status" aria-live="polite" hidden></p>
 
+    <!-- 登入 -->
+    <section id="login-view" class="card" aria-labelledby="login-title" hidden>
+      <h2 id="login-title">登入</h2>
+      <form id="login-form" novalidate>
         <div class="field">
-          <label for="product">品名</label>
-          <input id="product" name="product" type="text" maxlength="100" required list="product-list" autocomplete="off">
-          <datalist id="product-list">
-            <option value="主架48.6mm T:2.5mm 0.5m 熱浸">
-            <option value="主架48.6mm T:2.5mm 1.0m 熱浸">
-            <option value="主架48.6mm T:2.5mm 1.5m 熱浸">
-            <option value="主架48.6mm T:2.5mm 1.8m 熱浸">
-            <option value="主架48.6mm T:2.5mm 2.0m 熱浸">
-            <option value="橫桿42.7mm T:2.3mm 0.762m 熱浸">
-            <option value="橫桿42.7mm T:2.3mm 0.914m 熱浸">
-            <option value="橫桿42.7mm T:2.3mm 1.2m 熱浸">
-            <option value="橫桿42.7mm T:2.3mm 1.829m 熱浸">
-            <option value="斜桿42.7mm T:2.3mm 1.829mx2.0 熱浸">
-            <option value="平面調整座38.5x600mm">
-            <option value="U型調整座48.2x600mm">
-            <option value="踏板265x1800mm">
-            <option value="G型銷">
-          </datalist>
-          <small class="hint">可從清單選，也可直接輸入。</small>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" required>
         </div>
-
-        <div class="grid grid-3">
-          <div class="field">
-            <label for="unit_price">售價</label>
-            <input id="unit_price" name="unit_price" type="number" inputmode="decimal" min="0" step="any" required>
-          </div>
-          <div class="field">
-            <label for="qty">數量</label>
-            <input id="qty" name="qty" type="number" inputmode="numeric" min="1" step="1" required>
-          </div>
-          <div class="field">
-            <span class="label">總售價</span>
-            <output id="total" for="unit_price qty" class="total">—</output>
-          </div>
+        <div class="field">
+          <label for="password">密碼</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
         </div>
-
-        <div class="grid">
-          <div class="field">
-            <label for="expected_ship">預計出貨日（選填）</label>
-            <input id="expected_ship" name="expected_ship" type="date">
-          </div>
-          <div class="field">
-            <label for="note">備註（選填）</label>
-            <input id="note" name="note" type="text" maxlength="200">
-          </div>
-        </div>
-
-        <button id="submit-btn" type="submit">送出</button>
-        <p id="form-message" class="message" role="status" aria-live="polite" hidden></p>
+        <button id="login-btn" type="submit" class="primary">登入</button>
+        <p id="login-message" class="message" role="status" aria-live="polite" hidden></p>
       </form>
     </section>
 
-    <section class="card" aria-labelledby="list-title">
-      <div class="list-head">
-        <h2 id="list-title">最近 30 筆訂單明細</h2>
-        <button id="refresh-btn" type="button" class="secondary">重新整理</button>
-      </div>
-      <p id="list-message" class="message" role="status" aria-live="polite" hidden></p>
-      <ul id="order-list" class="request-list"></ul>
-    </section>
+    <div id="app-view" hidden>
+      <nav class="tabs" role="tablist" aria-label="功能">
+        <button type="button" role="tab" id="tab-new" aria-controls="panel-new" aria-selected="true">新增</button>
+        <button type="button" role="tab" id="tab-list" aria-controls="panel-list" aria-selected="false">訂單查詢</button>
+        <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false">客戶統計</button>
+      </nav>
+
+      <!-- 新增 -->
+      <section id="panel-new" class="card" role="tabpanel" aria-labelledby="tab-new">
+        <h2>新增訂單明細</h2>
+        <form id="new-form" novalidate>
+          <div class="grid">
+            <div class="field">
+              <label for="n-customer">客戶</label>
+              <input id="n-customer" name="customer" type="text" maxlength="50" list="customer-list" autocomplete="off" required>
+            </div>
+            <div class="field">
+              <label for="n-order_date">訂購日期</label>
+              <input id="n-order_date" name="order_date" type="date" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="n-product">品名</label>
+            <input id="n-product" name="product" type="text" maxlength="200" list="product-list" autocomplete="off" required>
+          </div>
+          <div class="grid grid-3">
+            <div class="field">
+              <label for="n-unit_price">售價</label>
+              <input id="n-unit_price" name="unit_price" type="number" inputmode="decimal" min="0" step="any" required>
+            </div>
+            <div class="field">
+              <label for="n-qty">數量</label>
+              <input id="n-qty" name="qty" type="number" inputmode="decimal" min="0" step="any" required>
+            </div>
+            <div class="field">
+              <span class="label">總售價</span>
+              <output id="n-total" class="total">—</output>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label for="n-expected_ship">預計出貨日（選填）</label>
+              <input id="n-expected_ship" name="expected_ship" type="date">
+            </div>
+            <div class="field">
+              <label for="n-note">備註（選填）</label>
+              <input id="n-note" name="note" type="text" maxlength="500">
+            </div>
+          </div>
+          <button id="new-btn" type="submit" class="primary">送出</button>
+          <p id="new-message" class="message" role="status" aria-live="polite" hidden></p>
+          <p class="hint">送出後會保留客戶與訂購日期，方便同一張訂單連續輸入多個品項。</p>
+        </form>
+      </section>
+
+      <!-- 查詢 -->
+      <section id="panel-list" class="card" role="tabpanel" aria-labelledby="tab-list" hidden>
+        <h2>訂單查詢</h2>
+        <form id="filter-form" class="filters" novalidate>
+          <div class="grid">
+            <div class="field">
+              <label for="f-customer">客戶</label>
+              <input id="f-customer" name="customer" type="search" list="customer-list" autocomplete="off" placeholder="全部">
+            </div>
+            <div class="field">
+              <label for="f-product">品名包含</label>
+              <input id="f-product" name="product" type="search" autocomplete="off" placeholder="例如：主架 2.0m">
+            </div>
+            <div class="field">
+              <label for="f-status">出貨狀態</label>
+              <select id="f-status" name="status">
+                <option value="">全部</option>
+                <option value="open">未完成（未出貨＋部分出貨）</option>
+                <option value="未出貨">未出貨</option>
+                <option value="部分出貨">部分出貨</option>
+                <option value="已出貨">已出貨</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-issue">資料問題</label>
+              <select id="f-issue" name="issue">
+                <option value="">不限</option>
+                <option value="yes">只看有問題的</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-from">訂購日期（起）</label>
+              <input id="f-from" name="from" type="date">
+            </div>
+            <div class="field">
+              <label for="f-to">訂購日期（迄）</label>
+              <input id="f-to" name="to" type="date">
+            </div>
+          </div>
+          <div class="row-buttons">
+            <button type="submit" class="primary">查詢</button>
+            <button type="button" id="filter-clear" class="secondary">清除條件</button>
+          </div>
+        </form>
+
+        <div id="customer-panel" class="customer-panel" hidden></div>
+
+        <p id="list-message" class="message" role="status" aria-live="polite" hidden></p>
+        <p id="list-count" class="hint"></p>
+        <ul id="order-list" class="request-list"></ul>
+        <div class="pager">
+          <button type="button" id="prev-btn" class="secondary">上一頁</button>
+          <span id="page-info"></span>
+          <button type="button" id="next-btn" class="secondary">下一頁</button>
+        </div>
+      </section>
+
+      <!-- 客戶統計 -->
+      <section id="panel-stats" class="card" role="tabpanel" aria-labelledby="tab-stats" hidden>
+        <div class="list-head">
+          <h2>客戶統計</h2>
+          <button type="button" id="stats-refresh" class="secondary">重新整理</button>
+        </div>
+        <div class="field">
+          <label for="s-search">搜尋客戶</label>
+          <input id="s-search" type="search" autocomplete="off">
+        </div>
+        <p id="stats-message" class="message" role="status" aria-live="polite" hidden></p>
+        <p id="stats-total" class="stats-total"></p>
+        <div class="table-wrap">
+          <table class="stats">
+            <thead>
+              <tr>
+                <th scope="col">客戶</th>
+                <th scope="col" class="num">訂單總額</th>
+                <th scope="col" class="num">筆數</th>
+                <th scope="col" class="num">未完成</th>
+                <th scope="col">最近訂購</th>
+              </tr>
+            </thead>
+            <tbody id="stats-body"></tbody>
+          </table>
+        </div>
+        <p class="hint">點客戶名稱可查看該客戶的訂單明細與各年度金額。訂單總額＝售價×數量，未扣折讓、運費與稅。</p>
+
+        <details class="import">
+          <summary>匯入舊資料（CSV）</summary>
+          <p class="hint">選擇 customer_orders_import.csv。資料只會從你的瀏覽器直接送到你的 Supabase，不會經過其他地方。每筆有「來源」編號，重複匯入會自動略過已存在的資料。</p>
+          <div class="field">
+            <label for="import-file">CSV 檔案</label>
+            <input id="import-file" type="file" accept=".csv,text/csv">
+          </div>
+          <button type="button" id="import-btn" class="secondary" disabled>開始匯入</button>
+          <progress id="import-progress" max="1" value="0" hidden></progress>
+          <p id="import-message" class="message" role="status" aria-live="polite" hidden></p>
+        </details>
+      </section>
+    </div>
   </main>
+
+  <!-- 編輯 -->
+  <dialog id="edit-dialog" aria-labelledby="edit-title">
+    <form id="edit-form" method="dialog" novalidate>
+      <h2 id="edit-title">編輯訂單明細</h2>
+      <p id="edit-issue" class="message warn" hidden></p>
+      <div class="grid">
+        <div class="field">
+          <label for="e-customer">客戶</label>
+          <input id="e-customer" name="customer" type="text" maxlength="50" list="customer-list" required>
+        </div>
+        <div class="field">
+          <label for="e-order_date">訂購日期</label>
+          <input id="e-order_date" name="order_date" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="e-product">品名</label>
+        <input id="e-product" name="product" type="text" maxlength="200" list="product-list" required>
+      </div>
+      <div class="grid grid-3">
+        <div class="field">
+          <label for="e-unit_price">售價</label>
+          <input id="e-unit_price" name="unit_price" type="number" inputmode="decimal" min="0" step="any">
+        </div>
+        <div class="field">
+          <label for="e-qty">數量</label>
+          <input id="e-qty" name="qty" type="number" inputmode="decimal" min="0" step="any">
+        </div>
+        <div class="field">
+          <span class="label">總售價</span>
+          <output id="e-total" class="total">—</output>
+        </div>
+      </div>
+      <fieldset class="ship">
+        <legend>出貨</legend>
+        <div class="grid grid-3">
+          <div class="field">
+            <label for="e-expected_ship">預計出貨日</label>
+            <input id="e-expected_ship" name="expected_ship" type="date">
+          </div>
+          <div class="field">
+            <label for="e-ship_date">出貨日</label>
+            <input id="e-ship_date" name="ship_date" type="date">
+          </div>
+          <div class="field">
+            <label for="e-shipped_qty">出貨數量</label>
+            <input id="e-shipped_qty" name="shipped_qty" type="number" inputmode="decimal" min="0" step="any">
+          </div>
+        </div>
+        <div class="field">
+          <label for="e-status">出貨狀態</label>
+          <select id="e-status" name="status">
+            <option>未出貨</option>
+            <option>部分出貨</option>
+            <option>已出貨</option>
+          </select>
+          <small class="hint">填出貨數量時會自動帶入狀態，可再手動調整。</small>
+        </div>
+        <button type="button" id="ship-all" class="secondary">全部出貨（今天）</button>
+      </fieldset>
+      <div class="field">
+        <label for="e-note">備註</label>
+        <input id="e-note" name="note" type="text" maxlength="500">
+      </div>
+      <div class="field">
+        <label for="e-payment_note">帳款資訊</label>
+        <input id="e-payment_note" name="payment_note" type="text" maxlength="500">
+      </div>
+      <label class="check"><input type="checkbox" id="e-clear-issue"> 資料問題已確認，清除提示</label>
+      <p id="edit-message" class="message" role="status" aria-live="polite" hidden></p>
+      <div class="row-buttons">
+        <button type="button" id="edit-save" class="primary">儲存</button>
+        <button type="button" id="edit-cancel" class="secondary">取消</button>
+        <button type="button" id="edit-delete" class="danger">刪除</button>
+      </div>
+      <p id="edit-meta" class="hint"></p>
+    </form>
+  </dialog>
+
+  <datalist id="customer-list"></datalist>
+  <datalist id="product-list">
+    <option value="主架48.6mm T:2.5mm 0.5m 熱浸">
+    <option value="主架48.6mm T:2.5mm 1.0m 熱浸">
+    <option value="主架48.6mm T:2.5mm 1.5m 熱浸">
+    <option value="主架48.6mm T:2.5mm 1.8m 熱浸">
+    <option value="主架48.6mm T:2.5mm 2.0m 熱浸">
+    <option value="橫桿42.7mm T:2.3mm 0.762m 熱浸">
+    <option value="橫桿42.7mm T:2.3mm 0.914m 熱浸">
+    <option value="橫桿42.7mm T:2.3mm 1.2m 熱浸">
+    <option value="橫桿42.7mm T:2.3mm 1.829m 熱浸">
+    <option value="斜桿42.7mm T:2.3mm 1.829mx2.0 熱浸">
+    <option value="平面調整座38.5x600mm">
+    <option value="U型調整座48.2x600mm">
+    <option value="踏板265x1800mm">
+    <option value="G型銷">
+  </datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="../config.js"></script>
