@@ -131,9 +131,18 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1
 
 .bom { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .bom th, .bom td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
-.bom th { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+.bom th { color: var(--muted); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
 .bom .num { text-align: right; }
 .bom tr.total td { font-weight: 700; border-bottom: none; }
+.bom-wrap { overflow-x: auto; }
+.bom input.price { width: 6.5em; min-height: 36px; padding: 6px 8px; text-align: right; }
+.bom td.cost { white-space: nowrap; }
+@media (max-width: 520px) {
+  .bom { font-size: 0.88rem; }
+  .bom th, .bom td { padding: 8px 3px; }
+  .bom td.name .icon { display: none; }
+  .bom input.price { width: 4.6em; padding: 6px 4px; }
+}
 
 .warnings { list-style: none; padding: 0; margin: 12px 0 0; }
 .warnings li {
